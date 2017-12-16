@@ -11,7 +11,8 @@
 
 (provide λ-match/false    match/false
          λ-match/identity match/identity
-         (rename-out [match-lambda λ-match]))
+         λ-match
+         #;(rename-out [match-lambda λ-match]))
 
 (module+ test
 
@@ -43,6 +44,15 @@
 
 (define-syntax λ-match/identity (syntax-parser [(_ clause ...) #'(match-lambda clause ... [v v])]))
 (define-syntax   match/identity (syntax-parser [(_ clause ...) #'(match        clause ... [v v])]))
+
+(define-syntax λ-match
+  (syntax-parser [(head:id clause ...) (syntax-property #'(match-lambda clause ...)
+                                        'mouse-over-tooltips
+                                        (vector this-syntax
+                                                (sub1 (syntax-position this-syntax))
+                                                (sub1 (+ (syntax-position #'head)
+                                                         (syntax-span #'head)))
+                                                "• λ-match is just a renaming of match-lambda"))]))
 
 
 (provide define/match₁ ‹›)
