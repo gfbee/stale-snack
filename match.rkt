@@ -1,8 +1,19 @@
 #lang racket/base
 
+#| Pattern Matching
+
+ Variants of ‘match’ and ‘match-lambda’, for defaulting to:
+   • #false, for predicate-like matching
+   • identity, for rewrite transformation rules
+
+ Function versions have names of the form ‘λ-match<>’, emphasizing the public api aspect
+  versus implementation details. In particular, ‘match-lambda’ is provided as ‘λ-match’. |#
+
 (provide λ-match/false    match/false
          λ-match/identity match/identity
-         define/match₁ ‹›)
+         (rename-out [match-lambda λ-match]))
+;
+(provide define/match₁ ‹›)
 
 (module+ test
   
