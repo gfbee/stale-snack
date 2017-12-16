@@ -12,21 +12,40 @@
 (provide λ-match/false    match/false
          λ-match/identity match/identity
          (rename-out [match-lambda λ-match]))
-;
-(provide define/match₁ ‹›)
 
 (module+ test
+
+  (define-syntax map-matcher
+    (syntax-parser [(_ (λ-matcher:id matcher:id clause ...) a-list:expr)
+                    #'(let ([result-λ (map (λ-matcher        clause ...)  a-list)]
+                            [result   (map (λ (v) (matcher v clause ...)) a-list)])
+                        (check-equal? result-λ result)
+                        result)]))
   
-  (check-equal? (map (λ-match/false)        '(a))   '(#false))
-  (check-equal? (map (λ-match/false ['a])   '(a b)) '(#true #false))
-  (check-equal? (map (λ-match/false ['a 1]) '(a b)) '(1     #false))
-  (check-equal? (map (λ-match/false ['a 1]
-                                    ['b 2]) '(a b)) '(1     2))
+  (check-equal? (map-matcher (λ-match/false match/false)               '(a))   '(#false))
+  (check-equal? (map-matcher (λ-match/false match/false ['a])          '(a b)) '(#true #false))
+  (check-equal? (map-matcher (λ-match/false match/false ['a 1])        '(a b)) '(1     #false))
+  (check-equal? (map-matcher (λ-match/false match/false ['a 1] ['b 2]) '(a b)) '(1     2))
   
-  (check-equal? (map (λ-match/identity)        '(a))     '(a))
-  (check-equal? (map (λ-match/identity ['a 1]) '(a b))   '(1 b))
-  (check-equal? (map (λ-match/identity ['a 1]
-                                       ['b 2]) '(a b c)) '(1 2 c)))
+  (check-equal? (map-matcher (λ-match/identity match/identity)               '(a))     '(a))
+  (check-equal? (map-matcher (λ-match/identity match/identity ['a 1])        '(a b))   '(1 b))
+  (check-equal? (map-matcher (λ-match/identity match/identity ['a 1] ['b 2]) '(a b c)) '(1 2 c)))
+
+(require (for-syntax syntax/parse racket/base))
+
+(require (only-in racket/match match-lambda match))
+
+(define-syntax λ-match/false
+  (syntax-parser [(_ [pattern result:expr ...] ...)
+                  #'(match-lambda [pattern #true result ...] ... [_ #false])]))
+
+(define-syntax match/false (syntax-parser [(_ e:expr clause ...) #'((λ-match/false clause ...) e)]))
+
+(define-syntax λ-match/identity (syntax-parser [(_ clause ...) #'(match-lambda clause ... [v v])]))
+(define-syntax   match/identity (syntax-parser [(_ clause ...) #'(match        clause ... [v v])]))
+
+
+(provide define/match₁ ‹›)
 
 (module+ test
   (require racket/match)
@@ -36,16 +55,6 @@
                   define/match define-match-expander)
          (for-syntax racket/base syntax/parse))
 (module+ test (require rackunit))
-
-(define-syntax λ-match/false
-  (syntax-parser [(_ [pattern result:expr ...] ...)
-                  #'(match-lambda [pattern #true result ...] ... [_ #false])]))
-
-(define-syntax match/false (syntax-parser [(_ e:expr clause ...) #'((λ-match/false clause ...) e)]))
-
-(define-syntax λ-match/identity (syntax-parser [(_ clause ...) #'(match-lambda clause ... [v v])]))
-
-(define-syntax match/identity (syntax-parser [(_ clause ...) #'(match clause ... [v v])]))
 
 
 ; Feature Extension: safer ‘match’, with declared variables and literals, also for result quasiquote.
