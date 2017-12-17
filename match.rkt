@@ -9,6 +9,11 @@
  Function versions have names of the form ‘λ-match<>’, emphasizing the public api aspect
   versus implementation details. In particular, ‘match-lambda’ is provided as ‘λ-match’. |#
 
+#| ToDo
+ • ‘#:when’ et al
+ • examine syntax error messages
+ • investigate what's going on when hovering over uses of ‘map-matcher’ |#
+
 (provide λ-match
          λ-match/false    match/false
          λ-match/identity match/identity)
@@ -37,30 +42,28 @@
 (require (only-in racket/match match-lambda match))
 
 (define-syntax λ-match
-  (syntax-parser [(_ clause ...)
-                  (syntax-tooltip this-syntax
-                                  #'(match-lambda clause ...)
-                                  "• just match-lambda, but renamed")]))
+  (syntax-parser [(_ clause ...) (syntax-tooltip this-syntax
+                                                 #'(match-lambda clause ...)
+                                                 "• just match-lambda, but renamed")]))
 (define-syntax λ-match/false
-  (syntax-parser [(_ [pattern result:expr ...] ...)
-                  (syntax-tooltip this-syntax
-                                  #'(match-lambda [pattern #true result ...] ... [_ #false])
-                                  "• match-lambda, but returning #false if no match")]))
+  (syntax-parser [(_ clause ...) (syntax-tooltip this-syntax
+                                  #'(λ (v) (match/false v clause ...))
+                                  "• match-lambda, but that returs #false if no match")]))
 (define-syntax match/false
-  (syntax-parser [(_ e:expr clause ...)
+  (syntax-parser [(_ e:expr [pattern result:expr ...] ...)
                   (syntax-tooltip this-syntax
-                                  #'((λ-match/false clause ...) e)
-                                  "• match, but producing #false if no match")]))
+                                  #'(match e [pattern #true result ...] ... [_ #false])
+                                  "• match, but that produces #false if no match")]))
 (define-syntax λ-match/identity
   (syntax-parser [(_ clause ...)
                   (syntax-tooltip this-syntax
-                                  #'(match-lambda clause ... [v v])
-                                  "• match-lambda, but returning the argument if no match")]))
+                                  #'(λ (v) (match/identity v clause ...))
+                                  "• match-lambda, but that returns the argument if no match")]))
 (define-syntax   match/identity
-  (syntax-parser [(_ clause ...)
+  (syntax-parser [(_ e:expr clause ...)
                   (syntax-tooltip this-syntax
-                                  #'(match        clause ... [v v])
-                                  "• match, but producing the value if no match")]))
+                                  #'(match e clause ... [v v])
+                                  "• match, but that produces the value if no match")]))
 
 
 (provide define/match₁ ‹›)
@@ -69,14 +72,10 @@
   (require racket/match)
   (check-equal? (match '(1 2 3) [(‹› ‹a› ...) (‹› ‹a› ...)]) '(1 2 3)))
 
-(require (only-in racket/match match-lambda
-                  define/match define-match-expander)
-         (for-syntax racket/base syntax/parse))
+(require (only-in racket/match define/match define-match-expander))
 (module+ test (require rackunit))
 
-
 ; Feature Extension: safer ‘match’, with declared variables and literals, also for result quasiquote.
-
 
 (define-syntax define/match₁
   (syntax-parser
