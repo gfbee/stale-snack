@@ -32,27 +32,37 @@
   (check-equal? (map-matcher (λ-match/identity match/identity ['a 1])        '(a b))   '(1 b))
   (check-equal? (map-matcher (λ-match/identity match/identity ['a 1] ['b 2]) '(a b c)) '(1 2 c)))
 
-(require (for-syntax syntax/parse racket/base))
-
+(require (for-syntax syntax/parse racket/base
+                     (only-in racket/format ~a)
+                     (only-in "syntax.rkt" syntax-tooltip)))
+         
 (require (only-in racket/match match-lambda match))
 
+(define-syntax λ-match
+  (syntax-parser [(_ clause ...)
+                  (syntax-tooltip this-syntax
+                                  #'(match-lambda clause ...)
+                                  "• just match-lambda, but renamed")]))
 (define-syntax λ-match/false
   (syntax-parser [(_ [pattern result:expr ...] ...)
-                  #'(match-lambda [pattern #true result ...] ... [_ #false])]))
-
-(define-syntax match/false (syntax-parser [(_ e:expr clause ...) #'((λ-match/false clause ...) e)]))
-
-(define-syntax λ-match/identity (syntax-parser [(_ clause ...) #'(match-lambda clause ... [v v])]))
-(define-syntax   match/identity (syntax-parser [(_ clause ...) #'(match        clause ... [v v])]))
-
-(define-syntax λ-match
-  (syntax-parser [(head:id clause ...) (syntax-property #'(match-lambda clause ...)
-                                        'mouse-over-tooltips
-                                        (vector this-syntax
-                                                (sub1 (syntax-position this-syntax))
-                                                (sub1 (+ (syntax-position #'head)
-                                                         (syntax-span #'head)))
-                                                "• λ-match is just a renaming of match-lambda"))]))
+                  (syntax-tooltip this-syntax
+                                  #'(match-lambda [pattern #true result ...] ... [_ #false])
+                                  (~a "• match-lambda, but returning #false if no match"))]))
+(define-syntax match/false
+  (syntax-parser [(_ e:expr clause ...)
+                  (syntax-tooltip this-syntax
+                                  #'((λ-match/false clause ...) e)
+                                  (~a "• match, but producing #false if no match"))]))
+(define-syntax λ-match/identity
+  (syntax-parser [(_ clause ...)
+                  (syntax-tooltip this-syntax
+                                  #'(match-lambda clause ... [v v])
+                                  (~a "• match-lambda, but returning the argument if no match"))]))
+(define-syntax   match/identity
+  (syntax-parser [(_ clause ...)
+                  (syntax-tooltip this-syntax
+                                  #'(match        clause ... [v v])
+                                  (~a "• match, but producing the value if no match"))]))
 
 
 (provide define/match₁ ‹›)

@@ -3,6 +3,9 @@
 #| Collect refactorings, with eventual goal of summarizing to help programmer, and machine,
     to recognize and perform. |#
 
+#;{(match-lambda [`(,a . ,b) `(,b . ,a)])
+   (λ-match [`(,a . ,b) `(,b . ,a)])}
+
 #;{(define (Pat p)
      (match p
        [`(TuplePat: ,pat ... "Boxed") `(list . ,(map Pat pat))]
