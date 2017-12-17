@@ -9,10 +9,9 @@
  Function versions have names of the form ‘λ-match<>’, emphasizing the public api aspect
   versus implementation details. In particular, ‘match-lambda’ is provided as ‘λ-match’. |#
 
-(provide λ-match/false    match/false
-         λ-match/identity match/identity
-         λ-match
-         #;(rename-out [match-lambda λ-match]))
+(provide λ-match
+         λ-match/false    match/false
+         λ-match/identity match/identity)
 
 (module+ test
 
@@ -33,7 +32,6 @@
   (check-equal? (map-matcher (λ-match/identity match/identity ['a 1] ['b 2]) '(a b c)) '(1 2 c)))
 
 (require (for-syntax syntax/parse racket/base
-                     (only-in racket/format ~a)
                      (only-in "syntax.rkt" syntax-tooltip)))
          
 (require (only-in racket/match match-lambda match))
@@ -47,22 +45,22 @@
   (syntax-parser [(_ [pattern result:expr ...] ...)
                   (syntax-tooltip this-syntax
                                   #'(match-lambda [pattern #true result ...] ... [_ #false])
-                                  (~a "• match-lambda, but returning #false if no match"))]))
+                                  "• match-lambda, but returning #false if no match")]))
 (define-syntax match/false
   (syntax-parser [(_ e:expr clause ...)
                   (syntax-tooltip this-syntax
                                   #'((λ-match/false clause ...) e)
-                                  (~a "• match, but producing #false if no match"))]))
+                                  "• match, but producing #false if no match")]))
 (define-syntax λ-match/identity
   (syntax-parser [(_ clause ...)
                   (syntax-tooltip this-syntax
                                   #'(match-lambda clause ... [v v])
-                                  (~a "• match-lambda, but returning the argument if no match"))]))
+                                  "• match-lambda, but returning the argument if no match")]))
 (define-syntax   match/identity
   (syntax-parser [(_ clause ...)
                   (syntax-tooltip this-syntax
                                   #'(match        clause ... [v v])
-                                  (~a "• match, but producing the value if no match"))]))
+                                  "• match, but producing the value if no match")]))
 
 
 (provide define/match₁ ‹›)
