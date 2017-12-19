@@ -49,19 +49,10 @@
   (check-equal? (map-matcher (λ-match/identity match/identity ['a 1])        '(a b))   '(1 b))
   (check-equal? (map-matcher (λ-match/identity match/identity ['a 1] ['b 2]) '(a b c)) '(1 2 c)))
 
-(require (for-syntax syntax/parse racket/base (only-in "syntax.rkt" syntax-tooltip)))
+(require (for-syntax syntax/parse racket/base
+                     (only-in "syntax.rkt" syntax-tooltip with-renamed-syntax-errors)))
          
 (require (only-in racket/match match/derived match))
-
-(define-for-syntax (with-renamed-syntax-errors name stx)
-  (with-handlers
-      ([exn:fail:syntax? (λ (e) (raise
-                                 (make-exn:fail:syntax
-                                  (string-append name
-                                                 (substring (exn-message e) (string-length "match")))
-                                  (exn-continuation-marks e)
-                                  (exn:fail:syntax-exprs e))))])
-    (local-expand stx (syntax-local-context) '())))
 
 (define-syntaxes (λ-match λ-match/false match/false λ-match/identity match/identity)
   (values
