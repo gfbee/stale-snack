@@ -2,16 +2,19 @@
 
 #| Pattern Matching
 
- Variants of ‘match’ and ‘match-lambda’, for defaulting to:
-   • #false, for predicate-like matching
-   • identity, for rewrite transformation rules
+ 1. Variants of ‘match’ and ‘match-lambda’, for defaulting to:
+     • #false, for predicate-like matching
+     • identity, for rewrite transformation rules
 
- Function versions have names of the form ‘λ-match<>’, emphasizing the public api aspect
-  versus implementation details. In particular, ‘match-lambda’ is provided as ‘λ-match’. |#
+    Function versions have names of the form ‘λ-match<>’, emphasizing the public api aspect
+     versus implementation details. In particular, ‘match-lambda’ is provided as ‘λ-match’.
+
+ 2. Pattern maker to bind a particular function of the value to an identifier pattern. |#
 
 (provide λ-match
          λ-match/false    match/false
-         λ-match/identity match/identity)
+         λ-match/identity match/identity
+         catamorphism)
 
 #| ToDo
  • ‘#:when’ et al
@@ -82,4 +85,29 @@
                                                     [v v])
                                    "• match, but that produces the value if no match")])))
 
+(module+ test
+  (require (only-in racket/match match))
+  (catamorphism ↓ f)
+  (define (f v) (match v
+                  [(list (↓ v1) (↓ v2)) (list v1 v2)]
+                  [_ (- v)]))
+  (define (g v) (catamorphism ↓ g)
+    (match v
+      [(list (↓ v1) (↓ v2)) (list v2 v1)]
+      [_ (* 10 v)]))
+  (check-equal? (f '(1 (2 3))) '(-1 (-2 -3)))
+  (check-equal? (g '(1 (2 3))) '((30 20) 10)))
 
+(require (only-in racket/match define-match-expander))
+
+(define-syntax catamorphism
+  (syntax-parser
+    [(_ cat-id:id f:expr)
+     (syntax-tooltip this-syntax
+                     #'(define-match-expander cat-id
+                         (syntax-parser [(_ an-id:id) #'(app f an-id)]))
+                     (format "~a\n~a"
+                             (format "• make match pattern (~a id) to bind id"
+                                     (syntax->datum #'cat-id))
+                             (format "  to ~s called on the matched value"
+                                     (syntax->datum #'f))))]))
