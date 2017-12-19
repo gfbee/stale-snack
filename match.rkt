@@ -34,8 +34,10 @@
 #;(m 0)
 #;(m′0)
 
-(module+ test (require rackunit)
+(module+ test (require rackunit))
 
+(module+ test
+  
   (define-syntax map-matcher
     (syntax-parser [(_ (λ-matcher:id matcher:id clause ...) a-list:expr)
                     #'(let ([result-λ (map (λ-matcher        clause ...)  a-list)]
@@ -51,6 +53,19 @@
   (check-equal? (map-matcher (λ-match/identity match/identity)               '(a))     '(a))
   (check-equal? (map-matcher (λ-match/identity match/identity ['a 1])        '(a b))   '(1 b))
   (check-equal? (map-matcher (λ-match/identity match/identity ['a 1] ['b 2]) '(a b c)) '(1 2 c)))
+
+(module+ test
+  (require (only-in racket/match match))
+  (catamorphism ↓ f)
+  (define (f v) (match v
+                  [(list (↓ v1) (↓ v2)) (list v1 v2)]
+                  [_ (- v)]))
+  (define (g v) (catamorphism ↓ g)
+    (match v
+      [(list (↓ v1) (↓ v2)) (list v2 v1)]
+      [_ (* 10 v)]))
+  (check-equal? (f '(1 (2 3))) '(-1 (-2 -3)))
+  (check-equal? (g '(1 (2 3))) '((30 20) 10)))
 
 (require (for-syntax syntax/parse racket/base
                      (only-in "syntax.rkt" syntax-tooltip with-renamed-syntax-errors)))
@@ -85,18 +100,6 @@
                                                     [v v])
                                    "• match, but that produces the value if no match")])))
 
-(module+ test
-  (require (only-in racket/match match))
-  (catamorphism ↓ f)
-  (define (f v) (match v
-                  [(list (↓ v1) (↓ v2)) (list v1 v2)]
-                  [_ (- v)]))
-  (define (g v) (catamorphism ↓ g)
-    (match v
-      [(list (↓ v1) (↓ v2)) (list v2 v1)]
-      [_ (* 10 v)]))
-  (check-equal? (f '(1 (2 3))) '(-1 (-2 -3)))
-  (check-equal? (g '(1 (2 3))) '((30 20) 10)))
 
 (require (only-in racket/match define-match-expander))
 
