@@ -64,6 +64,14 @@
   (check-equal? (map (λ-match/false [0] [1]) '(0 1 2)) '(#true #true #false))
   (check-equal? (map (λ-match/false [0] [v (list v)]) '(0 1)) '(#true (1)))
   (check-equal? (map (λ-match/false [0] [v (define r (list v)) r]) '(0 1)) '(#true (1)))
+
+  ; #:when.
+  (check-true ((λ-match/false  [_ #:when #true])  0))
+  (check-false ((λ-match/false [_ #:when #false]) 0))
+  (check-equal? (match/false 0      [v #:when v])       #true) ; ToDo: think about this.
+  (check-equal? (match/false #false [v #:when v])       #false)
+  (check-equal? (match/false 0      [v #:when (not v)]) #false)
+  (check-equal? (match/false #false [v #:when (not v)]) #true)
   
   (define-syntax map-matcher
     (syntax-parser [(_ (λ-matcher:id matcher:id clause ...) a-list:expr)
