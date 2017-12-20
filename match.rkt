@@ -38,6 +38,33 @@
 
 (module+ test
   
+  ; Syntax errors.
+  ; Same possibilities as ‘match’, except missing rhs is not an error.
+  ;   • a ‘match’ can have no clauses, which will be a runtime error
+  (require racket/match)
+  #;(match/false ())
+  #;(match/false () (_ 1))
+  #;(match/false (match)) ; ToDo.
+  #;(match/false 0  (()))
+  #;(match/false 0  (())   (_ 1))
+  #;(match/false 0  (_ 1)  (()))
+  #;(match/false 0  (_ ()) (1 1))
+  #;(match/false 0  (1 1)  (_ ()))
+
+  ; Runtime errors.
+  ; Same possibilities as ‘match’, except of course there will always be a match.
+  #;(begin (match/false (/ 0))
+           ;  versus:
+           (match/false 0)
+           ;
+           (match/false 0 (1 1) (_ (/ 0)))
+           (match/false 0 ((app 2))))
+
+  ; From csc104 language tests.
+  (check-equal? (map (λ-match/false [0] [1]) '(0 1 2)) '(#true #true #false))
+  (check-equal? (map (λ-match/false [0] [v (list v)]) '(0 1)) '(#true (1)))
+  (check-equal? (map (λ-match/false [0] [v (define r (list v)) r]) '(0 1)) '(#true (1)))
+  
   (define-syntax map-matcher
     (syntax-parser [(_ (λ-matcher:id matcher:id clause ...) a-list:expr)
                     #'(let ([result-λ (map (λ-matcher        clause ...)  a-list)]
@@ -72,7 +99,7 @@
          
 (require (only-in racket/match match/derived match-lambda))
 
-(define-syntaxes (λ-match λ-match/false match/false λ-match/identity match/identity)
+(define-syntaxes (λ-match λ-match/false match/false match/false′ λ-match/identity match/identity)
   (values
    (syntax-parser [(_ clause ...)
                    (syntax-tooltip this-syntax #'(match-lambda clause ...)
@@ -80,14 +107,25 @@
    (syntax-parser [(_ clause ...)
                    (syntax-tooltip this-syntax #'(λ (v) (match/false v clause ...))
                                    "• match-lambda, but that returns #false if no match")])
-   (syntax-parser [(_ e:expr [pattern result:expr ...] ...)
+   (syntax-parser [(_ e:expr clause ...)
                    (syntax-tooltip this-syntax
-                                   (with-renamed-syntax-errors "match/false"
-                                     #`(match/derived e #,this-syntax
-                                                      [pattern #true result ...]
-                                                      ...
-                                                      [_ #false]))
+                                   (with-renamed-syntax-errors "match" "match/false"
+                                     #'(match/false′ e clause ...))
                                    "• match, but that produces #false if no match")])
+   (syntax-parser [(_ e:expr
+                      [pattern #:when when:expr result:expr ...]
+                      clause ...)
+                   #`(match/derived e #,this-syntax
+                                    [pattern #:when when #true result ...]
+                                    [e′ (match/false′ e′ clause ...)])]
+                  [(_ e:expr
+                      [pattern result:expr ...]
+                      clause ...)
+                   #`(match/derived e #,this-syntax
+                                    [pattern #true result ...]
+                                    [e′ (match/false′ e′ clause ...)])]
+                  [(_ e:expr)
+                   #`(match/derived e #,this-syntax [_ #false])])
    (syntax-parser [(_ clause ...)
                    (syntax-tooltip this-syntax
                                    #'(λ (v) (match/identity v clause ...))
