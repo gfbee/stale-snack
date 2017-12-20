@@ -17,11 +17,15 @@
                                                                  (syntax-span #'head)))
                                                         message-string))]))
 
-(define (with-renamed-syntax-errors name stx)
-  (with-handlers ([exn:fail:syntax? (λ (e) (raise (make-exn:fail:syntax
-                                                   (regexp-replace #rx"[^:]*" (exn-message e) name)
-                                                   (exn-continuation-marks e)
-                                                   (exn:fail:syntax-exprs e))))])
+(define (with-renamed-syntax-errors original-name name stx)
+  (local-require (only-in racket ~a))
+  (with-handlers ([exn:fail:syntax?
+                   (λ (e) (raise (make-exn:fail:syntax
+                                  (regexp-replace (regexp-quote (~a original-name ":"))
+                                                  (exn-message e)
+                                                  (regexp-replace-quote (~a name ":")))
+                                  (exn-continuation-marks e)
+                                  (exn:fail:syntax-exprs e))))])
     (local-expand stx (syntax-local-context) '())))
 
 (require (only-in racket/contract ->)
